@@ -28,6 +28,7 @@ void UDreamCurvedBox::SetRotation(FRotator InRotation)
 	{
 		MyCurvedBox->SetRotation(Rotation);
 	}
+	InvalidateLayoutAndVolatility();
 }
 
 void UDreamCurvedBox::SetCurveAngle(float InCurveAngle)
@@ -37,6 +38,7 @@ void UDreamCurvedBox::SetCurveAngle(float InCurveAngle)
 	{
 		MyCurvedBox->SetCurveAngle(CurveAngle);
 	}
+	InvalidateLayoutAndVolatility();
 }
 
 void UDreamCurvedBox::SetCurveSegments(int32 InCurveSegments)
@@ -46,6 +48,7 @@ void UDreamCurvedBox::SetCurveSegments(int32 InCurveSegments)
 	{
 		MyCurvedBox->SetCurveSegments(CurveSegments);
 	}
+	InvalidateLayoutAndVolatility();
 }
 
 void UDreamCurvedBox::SetPerspectiveStrength(float InPerspectiveStrength)
@@ -55,6 +58,7 @@ void UDreamCurvedBox::SetPerspectiveStrength(float InPerspectiveStrength)
 	{
 		MyCurvedBox->SetPerspectiveStrength(PerspectiveStrength);
 	}
+	InvalidateLayoutAndVolatility();
 }
 
 void UDreamCurvedBox::SetDepthOffset(float InDepthOffset)
@@ -64,6 +68,7 @@ void UDreamCurvedBox::SetDepthOffset(float InDepthOffset)
 	{
 		MyCurvedBox->SetDepthOffset(DepthOffset);
 	}
+	InvalidateLayoutAndVolatility();
 }
 
 void UDreamCurvedBox::SetTransformPivot(FVector2D InTransformPivot)
@@ -74,6 +79,7 @@ void UDreamCurvedBox::SetTransformPivot(FVector2D InTransformPivot)
 	{
 		MyCurvedBox->SetTransformPivot(TransformPivot);
 	}
+	InvalidateLayoutAndVolatility();
 }
 
 void UDreamCurvedBox::SynchronizeProperties()

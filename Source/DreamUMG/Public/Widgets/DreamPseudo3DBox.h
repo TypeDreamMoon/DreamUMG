@@ -16,43 +16,43 @@ class DREAMUMG_API UDreamPseudo3DBox : public UContentWidget
 public:
 	UDreamPseudo3DBox(const FObjectInitializer& ObjectInitializer);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pseudo 3D")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetRotation, Category = "Pseudo 3D")
 	FRotator Rotation;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pseudo 3D", meta = (ClampMin = "0.0", UIMin = "0.0", UIMax = "1.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetPerspectiveStrength, Category = "Pseudo 3D", meta = (ClampMin = "0.0", UIMin = "0.0", UIMax = "1.0"))
 	float PerspectiveStrength;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pseudo 3D", meta = (ClampMin = "1.0", ClampMax = "170.0", UIMin = "1.0", UIMax = "120.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetFieldOfView, Category = "Pseudo 3D", meta = (ClampMin = "1.0", ClampMax = "170.0", UIMin = "1.0", UIMax = "120.0"))
 	float FieldOfView;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pseudo 3D")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetDepthOffset, Category = "Pseudo 3D")
 	float DepthOffset;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pseudo 3D", meta = (ClampMin = "1", ClampMax = "12", UIMin = "1", UIMax = "8"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetPerspectiveSegments, Category = "Pseudo 3D", meta = (ClampMin = "1", ClampMax = "12", UIMin = "1", UIMax = "8"))
 	int32 PerspectiveSegments;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pseudo 3D", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetTransformPivot, Category = "Pseudo 3D", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	FVector2D TransformPivot;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pseudo 3D")
 	bool bIgnoreClipping;
 
-	UFUNCTION(BlueprintCallable, Category = "Pseudo 3D")
+	UFUNCTION(BlueprintCallable, BlueprintSetter, Category = "Pseudo 3D")
 	void SetRotation(FRotator InRotation);
 
-	UFUNCTION(BlueprintCallable, Category = "Pseudo 3D")
+	UFUNCTION(BlueprintCallable, BlueprintSetter, Category = "Pseudo 3D")
 	void SetPerspectiveStrength(float InPerspectiveStrength);
 
-	UFUNCTION(BlueprintCallable, Category = "Pseudo 3D")
+	UFUNCTION(BlueprintCallable, BlueprintSetter, Category = "Pseudo 3D")
 	void SetFieldOfView(float InFieldOfView);
 
-	UFUNCTION(BlueprintCallable, Category = "Pseudo 3D")
+	UFUNCTION(BlueprintCallable, BlueprintSetter, Category = "Pseudo 3D")
 	void SetDepthOffset(float InDepthOffset);
 
-	UFUNCTION(BlueprintCallable, Category = "Pseudo 3D")
+	UFUNCTION(BlueprintCallable, BlueprintSetter, Category = "Pseudo 3D")
 	void SetPerspectiveSegments(int32 InPerspectiveSegments);
 
-	UFUNCTION(BlueprintCallable, Category = "Pseudo 3D")
+	UFUNCTION(BlueprintCallable, BlueprintSetter, Category = "Pseudo 3D")
 	void SetTransformPivot(FVector2D InTransformPivot);
 
 	UFUNCTION(BlueprintCallable, Category = "Pseudo 3D")

@@ -34,7 +34,8 @@ protected:
 	virtual void OnArrangeChildren(const FGeometry& AllottedGeometry, FArrangedChildren& ArrangedChildren) const override;
 
 private:
-	FVector2f ProjectLocalPoint(const FVector2f& LocalPoint, const FVector2f& LocalSize, float CameraDistance, const FQuat& RotationQuat) const;
+	FVector BuildCurvedPoint(const FVector2f& LocalPoint, const FVector2f& LocalSize) const;
+	FVector2f ProjectRotatedPoint(const FVector& RotatedPoint, const FVector2f& PivotPixels, float CameraDistance) const;
 
 	FRotator Rotation = FRotator::ZeroRotator;
 	float CurveAngle = 45.0f;

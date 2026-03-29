@@ -88,15 +88,15 @@ namespace DreamTextAnimation
 		InOutRuntimeFinished = false;
 	}
 
-	static bool RequiresPlaybackTick(const bool bAutoPlay, const bool bRuntimeFinished, const bool bLoop, const bool bPingPong)
+	static bool RequiresPlaybackTick(const bool bShouldPlay, const bool bPlaybackPaused, const bool bRuntimeFinished, const bool bLoop, const bool bPingPong)
 	{
-		return bAutoPlay && (!bRuntimeFinished || bLoop || bPingPong);
+		return bShouldPlay && !bPlaybackPaused && (!bRuntimeFinished || bLoop || bPingPong);
 	}
 
-	static bool TickPlayback(const float DeltaTime, const bool bAutoPlay, const bool bLoop, const bool bPingPong, const float Speed, float& InOutRuntimeOffset, float& InOutRuntimeDirection, bool& InOutRuntimeFinished)
+	static bool TickPlayback(const float DeltaTime, const bool bShouldPlay, const bool bPlaybackPaused, const bool bLoop, const bool bPingPong, const float Speed, float& InOutRuntimeOffset, float& InOutRuntimeDirection, bool& InOutRuntimeFinished)
 	{
 		bool bKeepTicking = false;
-		if (!bAutoPlay)
+		if (!bShouldPlay || bPlaybackPaused)
 		{
 			return false;
 		}
@@ -197,7 +197,43 @@ void UDreamTextAnimationPlayerBase::ResetRuntimeState()
 {
 }
 
+void UDreamTextAnimationPlayerBase::ResetPlayerState()
+{
+	ResetRuntimeState();
+}
+
 bool UDreamTextAnimationPlayerBase::RequiresTick() const
+{
+	return false;
+}
+
+bool UDreamTextAnimationPlayerBase::NeedsTick() const
+{
+	return RequiresTick();
+}
+
+void UDreamTextAnimationPlayerBase::PlayPlayback()
+{
+}
+
+void UDreamTextAnimationPlayerBase::PausePlayback()
+{
+}
+
+void UDreamTextAnimationPlayerBase::ResumePlayback()
+{
+}
+
+void UDreamTextAnimationPlayerBase::StopPlayback()
+{
+}
+
+bool UDreamTextAnimationPlayerBase::IsPlaying() const
+{
+	return false;
+}
+
+bool UDreamTextAnimationPlayerBase::IsPaused() const
 {
 	return false;
 }
@@ -223,6 +259,45 @@ void UDreamTextTypewriterPlayer::SetOffset(float InOffset)
 	bRuntimeFinished = false;
 }
 
+void UDreamTextTypewriterPlayer::PlayPlayback()
+{
+	if (bRuntimeFinished)
+	{
+		ResetRuntimeState();
+	}
+
+	bManualPlayback = true;
+	bPlaybackPaused = false;
+}
+
+void UDreamTextTypewriterPlayer::PausePlayback()
+{
+	bPlaybackPaused = true;
+}
+
+void UDreamTextTypewriterPlayer::ResumePlayback()
+{
+	bManualPlayback = true;
+	bPlaybackPaused = false;
+}
+
+void UDreamTextTypewriterPlayer::StopPlayback()
+{
+	bManualPlayback = false;
+	bPlaybackPaused = true;
+	ResetRuntimeState();
+}
+
+bool UDreamTextTypewriterPlayer::IsPlaying() const
+{
+	return RequiresTick();
+}
+
+bool UDreamTextTypewriterPlayer::IsPaused() const
+{
+	return bPlaybackPaused;
+}
+
 void UDreamTextTypewriterPlayer::ResetRuntimeState()
 {
 	DreamTextAnimation::ResetPlaybackState(Offset, bPlayReverse, RuntimeOffset, RuntimeDirection, bRuntimeFinished);
@@ -230,12 +305,12 @@ void UDreamTextTypewriterPlayer::ResetRuntimeState()
 
 bool UDreamTextTypewriterPlayer::RequiresTick() const
 {
-	return DreamTextAnimation::RequiresPlaybackTick(bAutoPlay, bRuntimeFinished, bLoop, bPingPong);
+	return DreamTextAnimation::RequiresPlaybackTick(bAutoPlay || bManualPlayback, bPlaybackPaused, bRuntimeFinished, bLoop, bPingPong);
 }
 
 bool UDreamTextTypewriterPlayer::TickPlayer(float DeltaTime, const FDreamTextAnimationLayoutContext& LayoutContext)
 {
-	return DreamTextAnimation::TickPlayback(DeltaTime, bAutoPlay, bLoop, bPingPong, Speed, RuntimeOffset, RuntimeDirection, bRuntimeFinished);
+	return DreamTextAnimation::TickPlayback(DeltaTime, bAutoPlay || bManualPlayback, bPlaybackPaused, bLoop, bPingPong, Speed, RuntimeOffset, RuntimeDirection, bRuntimeFinished);
 }
 
 int32 UDreamTextTypewriterPlayer::GetVisibleCharacterCount(int32 TotalVisibleCharacters) const
@@ -262,7 +337,7 @@ int32 UDreamTextTypewriterPlayer::GetVisibleCharacterCount(int32 TotalVisibleCha
 
 float UDreamTextTypewriterPlayer::GetEffectiveOffset() const
 {
-	return bAutoPlay ? RuntimeOffset : Offset;
+	return (bAutoPlay || bManualPlayback || bPlaybackPaused) ? RuntimeOffset : Offset;
 }
 
 void UDreamTextAnimationSelectorBase::SetOffset(float InOffset)
@@ -272,19 +347,68 @@ void UDreamTextAnimationSelectorBase::SetOffset(float InOffset)
 	bRuntimeFinished = false;
 }
 
+void UDreamTextAnimationSelectorBase::PlayPlayback()
+{
+	if (bRuntimeFinished)
+	{
+		ResetRuntimeState();
+	}
+
+	bManualPlayback = true;
+	bPlaybackPaused = false;
+}
+
+void UDreamTextAnimationSelectorBase::PausePlayback()
+{
+	bPlaybackPaused = true;
+}
+
+void UDreamTextAnimationSelectorBase::ResumePlayback()
+{
+	bManualPlayback = true;
+	bPlaybackPaused = false;
+}
+
+void UDreamTextAnimationSelectorBase::StopPlayback()
+{
+	bManualPlayback = false;
+	bPlaybackPaused = true;
+	ResetRuntimeState();
+}
+
+bool UDreamTextAnimationSelectorBase::IsPlaying() const
+{
+	return RequiresTick();
+}
+
+bool UDreamTextAnimationSelectorBase::IsPaused() const
+{
+	return bPlaybackPaused;
+}
+
 void UDreamTextAnimationSelectorBase::ResetRuntimeState()
 {
 	DreamTextAnimation::ResetPlaybackState(Offset, bPlayReverse, RuntimeOffset, RuntimeDirection, bRuntimeFinished);
 }
 
+void UDreamTextAnimationSelectorBase::ResetSelectorState()
+{
+	ResetRuntimeState();
+}
+
 bool UDreamTextAnimationSelectorBase::RequiresTick() const
 {
-	return DreamTextAnimation::RequiresPlaybackTick(bAutoPlay, bRuntimeFinished, bLoop, bPingPong);
+	return DreamTextAnimation::RequiresPlaybackTick(bAutoPlay || bManualPlayback, bPlaybackPaused, bRuntimeFinished, bLoop, bPingPong);
+}
+
+bool UDreamTextAnimationSelectorBase::NeedsTick() const
+{
+	return RequiresTick();
 }
 
 bool UDreamTextAnimationSelectorBase::TickSelector(float DeltaTime, const FDreamTextAnimationLayoutContext& LayoutContext)
 {
-	return DreamTextAnimation::TickPlayback(DeltaTime, bAutoPlay, bLoop, bPingPong, Speed, RuntimeOffset, RuntimeDirection, bRuntimeFinished);
+	return DreamTextAnimation::TickPlayback(DeltaTime, bAutoPlay || bManualPlayback, bPlaybackPaused, bLoop, bPingPong, Speed, RuntimeOffset, RuntimeDirection, bRuntimeFinished);
 }
 
 bool UDreamTextAnimationSelectorBase::EvaluateSelection(const FDreamTextAnimationGlyphContext& GlyphContext, FDreamTextAnimationSelectionResult& OutSelectionResult) const
@@ -322,7 +446,7 @@ bool UDreamTextAnimationSelectorBase::EvaluateSelection(const FDreamTextAnimatio
 
 float UDreamTextAnimationSelectorBase::GetEffectiveOffset() const
 {
-	return bAutoPlay ? RuntimeOffset : Offset;
+	return (bAutoPlay || bManualPlayback || bPlaybackPaused) ? RuntimeOffset : Offset;
 }
 
 bool UDreamTextAnimationRangeSelector::EvaluateSelectorValue(const FDreamTextAnimationGlyphContext& GlyphContext, const FDreamTextAnimationSelectionResult& SelectionResult, float EffectiveOffset, float& OutRawValue) const
@@ -373,7 +497,43 @@ void UDreamTextAnimationExecutorBase::ResetRuntimeState()
 {
 }
 
+void UDreamTextAnimationExecutorBase::ResetExecutorState()
+{
+	ResetRuntimeState();
+}
+
 bool UDreamTextAnimationExecutorBase::RequiresTick() const
+{
+	return false;
+}
+
+bool UDreamTextAnimationExecutorBase::NeedsTick() const
+{
+	return RequiresTick();
+}
+
+void UDreamTextAnimationExecutorBase::PlayPlayback()
+{
+}
+
+void UDreamTextAnimationExecutorBase::PausePlayback()
+{
+}
+
+void UDreamTextAnimationExecutorBase::ResumePlayback()
+{
+}
+
+void UDreamTextAnimationExecutorBase::StopPlayback()
+{
+}
+
+bool UDreamTextAnimationExecutorBase::IsPlaying() const
+{
+	return false;
+}
+
+bool UDreamTextAnimationExecutorBase::IsPaused() const
 {
 	return false;
 }
@@ -422,15 +582,51 @@ void UDreamTextAnimationWaveExecutorBase::ResetRuntimeState()
 	RuntimeTime = 0.0f;
 }
 
+void UDreamTextAnimationWaveExecutorBase::PlayPlayback()
+{
+	bPlaybackPaused = false;
+}
+
+void UDreamTextAnimationWaveExecutorBase::PausePlayback()
+{
+	bPlaybackPaused = true;
+}
+
+void UDreamTextAnimationWaveExecutorBase::ResumePlayback()
+{
+	bPlaybackPaused = false;
+}
+
+void UDreamTextAnimationWaveExecutorBase::StopPlayback()
+{
+	bPlaybackPaused = true;
+	ResetRuntimeState();
+}
+
+bool UDreamTextAnimationWaveExecutorBase::IsPlaying() const
+{
+	return RequiresTick();
+}
+
+bool UDreamTextAnimationWaveExecutorBase::IsPaused() const
+{
+	return HasWaveEffect() && bPlaybackPaused;
+}
+
 bool UDreamTextAnimationWaveExecutorBase::RequiresTick() const
 {
-	return HasWaveEffect();
+	return HasWaveEffect() && !bPlaybackPaused;
 }
 
 bool UDreamTextAnimationWaveExecutorBase::TickExecutor(float DeltaTime, const FDreamTextAnimationLayoutContext& LayoutContext)
 {
+	if (bPlaybackPaused)
+	{
+		return false;
+	}
+
 	RuntimeTime += DeltaTime;
-	return HasWaveEffect();
+	return HasWaveEffect() && !bPlaybackPaused;
 }
 
 void UDreamTextAnimationWaveExecutorBase::ApplyToGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, const FDreamTextAnimationSelectionResult& SelectionResult, FDreamTextAnimationGlyphState& InOutGlyphState) const
@@ -548,6 +744,13 @@ void UDreamTextAnimationPlayer::SetOffset(float InOffset)
 	}
 }
 
+void UDreamTextAnimationPlayer::SetSelector(UDreamTextAnimationSelectorBase* InSelector)
+{
+	Selector = InSelector;
+	EnsureSelector();
+	ResetRuntimeState();
+}
+
 void UDreamTextAnimationPlayer::SetExecutors(const TArray<UDreamTextAnimationExecutorBase*>& InExecutors)
 {
 	Executors.Reset();
@@ -562,6 +765,158 @@ void UDreamTextAnimationPlayer::SetExecutors(const TArray<UDreamTextAnimationExe
 	}
 
 	ResetRuntimeState();
+}
+
+void UDreamTextAnimationPlayer::AddExecutor(UDreamTextAnimationExecutorBase* InExecutor)
+{
+	if (InExecutor == nullptr)
+	{
+		return;
+	}
+
+	Executors.Add(InExecutor);
+	ResetRuntimeState();
+}
+
+bool UDreamTextAnimationPlayer::RemoveExecutor(UDreamTextAnimationExecutorBase* InExecutor)
+{
+	const int32 RemovedCount = Executors.Remove(InExecutor);
+	if (RemovedCount > 0)
+	{
+		ResetRuntimeState();
+		return true;
+	}
+
+	return false;
+}
+
+void UDreamTextAnimationPlayer::ClearExecutors()
+{
+	if (Executors.Num() == 0)
+	{
+		return;
+	}
+
+	Executors.Reset();
+	ResetRuntimeState();
+}
+
+TArray<UDreamTextAnimationExecutorBase*> UDreamTextAnimationPlayer::GetExecutorsCopy() const
+{
+	TArray<UDreamTextAnimationExecutorBase*> Result;
+	Result.Reserve(Executors.Num());
+
+	for (const TObjectPtr<UDreamTextAnimationExecutorBase>& Executor : Executors)
+	{
+		if (Executor != nullptr)
+		{
+			Result.Add(Executor.Get());
+		}
+	}
+
+	return Result;
+}
+
+void UDreamTextAnimationPlayer::PlayPlayback()
+{
+	EnsureSelector();
+	if (Selector != nullptr)
+	{
+		Selector->PlayPlayback();
+	}
+
+	for (UDreamTextAnimationExecutorBase* Executor : Executors)
+	{
+		if (Executor != nullptr)
+		{
+			Executor->PlayPlayback();
+		}
+	}
+}
+
+void UDreamTextAnimationPlayer::PausePlayback()
+{
+	if (Selector != nullptr)
+	{
+		Selector->PausePlayback();
+	}
+
+	for (UDreamTextAnimationExecutorBase* Executor : Executors)
+	{
+		if (Executor != nullptr)
+		{
+			Executor->PausePlayback();
+		}
+	}
+}
+
+void UDreamTextAnimationPlayer::ResumePlayback()
+{
+	EnsureSelector();
+	if (Selector != nullptr)
+	{
+		Selector->ResumePlayback();
+	}
+
+	for (UDreamTextAnimationExecutorBase* Executor : Executors)
+	{
+		if (Executor != nullptr)
+		{
+			Executor->ResumePlayback();
+		}
+	}
+}
+
+void UDreamTextAnimationPlayer::StopPlayback()
+{
+	if (Selector != nullptr)
+	{
+		Selector->StopPlayback();
+	}
+
+	for (UDreamTextAnimationExecutorBase* Executor : Executors)
+	{
+		if (Executor != nullptr)
+		{
+			Executor->StopPlayback();
+		}
+	}
+}
+
+bool UDreamTextAnimationPlayer::IsPlaying() const
+{
+	if (Selector != nullptr && Selector->IsPlaying())
+	{
+		return true;
+	}
+
+	for (const UDreamTextAnimationExecutorBase* Executor : Executors)
+	{
+		if (Executor != nullptr && Executor->IsPlaying())
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool UDreamTextAnimationPlayer::IsPaused() const
+{
+	if (Selector != nullptr && Selector->IsPaused())
+	{
+		return true;
+	}
+
+	for (const UDreamTextAnimationExecutorBase* Executor : Executors)
+	{
+		if (Executor != nullptr && Executor->IsPaused())
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void UDreamTextAnimationPlayer::ResetRuntimeState()

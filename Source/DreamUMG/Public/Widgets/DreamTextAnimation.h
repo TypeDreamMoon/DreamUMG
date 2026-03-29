@@ -41,12 +41,36 @@ struct FDreamTextAnimationGlyphState
 	FLinearColor Color = FLinearColor::White;
 };
 
-UCLASS(Abstract, BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories)
+UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories)
 class DREAMUMG_API UDreamTextAnimationPlayerBase : public UObject
 {
 	GENERATED_BODY()
 
 public:
+	UFUNCTION(BlueprintCallable, Category = "Animation")
+	void ResetPlayerState();
+
+	UFUNCTION(BlueprintPure, Category = "Animation")
+	bool NeedsTick() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	virtual void PlayPlayback();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	virtual void PausePlayback();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	virtual void ResumePlayback();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	virtual void StopPlayback();
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Playback")
+	virtual bool IsPlaying() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Playback")
+	virtual bool IsPaused() const;
+
 	virtual void ResetRuntimeState();
 	virtual bool RequiresTick() const;
 	virtual bool TickPlayer(float DeltaTime, const FDreamTextAnimationLayoutContext& LayoutContext);
@@ -54,7 +78,7 @@ public:
 	virtual void ApplyToGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, FDreamTextAnimationGlyphState& InOutGlyphState) const;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Typewriter Player"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Typewriter Player"))
 class DREAMUMG_API UDreamTextTypewriterPlayer : public UDreamTextAnimationPlayerBase
 {
 	GENERATED_BODY()
@@ -90,6 +114,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Animation")
 	float GetOffset() const { return Offset; }
 
+	virtual void PlayPlayback() override;
+	virtual void PausePlayback() override;
+	virtual void ResumePlayback() override;
+	virtual void StopPlayback() override;
+	virtual bool IsPlaying() const override;
+	virtual bool IsPaused() const override;
+
 	virtual void ResetRuntimeState() override;
 	virtual bool RequiresTick() const override;
 	virtual bool TickPlayer(float DeltaTime, const FDreamTextAnimationLayoutContext& LayoutContext) override;
@@ -100,6 +131,12 @@ private:
 
 private:
 	UPROPERTY(Transient)
+	bool bManualPlayback = false;
+
+	UPROPERTY(Transient)
+	bool bPlaybackPaused = false;
+
+	UPROPERTY(Transient)
 	float RuntimeOffset = 0.0f;
 
 	UPROPERTY(Transient)
@@ -109,7 +146,7 @@ private:
 	bool bRuntimeFinished = false;
 };
 
-UCLASS(Abstract, BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories)
+UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories)
 class DREAMUMG_API UDreamTextAnimationSelectorBase : public UObject
 {
 	GENERATED_BODY()
@@ -145,6 +182,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Animation")
 	float GetOffset() const { return Offset; }
 
+	UFUNCTION(BlueprintCallable, Category = "Animation")
+	void ResetSelectorState();
+
+	UFUNCTION(BlueprintPure, Category = "Animation")
+	bool NeedsTick() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	virtual void PlayPlayback();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	virtual void PausePlayback();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	virtual void ResumePlayback();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	virtual void StopPlayback();
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Playback")
+	virtual bool IsPlaying() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Playback")
+	virtual bool IsPaused() const;
+
 	virtual void ResetRuntimeState();
 	virtual bool RequiresTick() const;
 	virtual bool TickSelector(float DeltaTime, const FDreamTextAnimationLayoutContext& LayoutContext);
@@ -157,6 +218,12 @@ protected:
 
 protected:
 	UPROPERTY(Transient)
+	bool bManualPlayback = false;
+
+	UPROPERTY(Transient)
+	bool bPlaybackPaused = false;
+
+	UPROPERTY(Transient)
 	float RuntimeOffset = 0.0f;
 
 	UPROPERTY(Transient)
@@ -166,7 +233,7 @@ protected:
 	bool bRuntimeFinished = false;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Range Selector"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Range Selector"))
 class DREAMUMG_API UDreamTextAnimationRangeSelector : public UDreamTextAnimationSelectorBase
 {
 	GENERATED_BODY()
@@ -182,7 +249,7 @@ protected:
 	virtual bool EvaluateSelectorValue(const FDreamTextAnimationGlyphContext& GlyphContext, const FDreamTextAnimationSelectionResult& SelectionResult, float EffectiveOffset, float& OutRawValue) const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Random Selector"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Random Selector"))
 class DREAMUMG_API UDreamTextAnimationRandomSelector : public UDreamTextAnimationSelectorBase
 {
 	GENERATED_BODY()
@@ -195,7 +262,7 @@ protected:
 	virtual bool EvaluateSelectorValue(const FDreamTextAnimationGlyphContext& GlyphContext, const FDreamTextAnimationSelectionResult& SelectionResult, float EffectiveOffset, float& OutRawValue) const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Lyrics Selector"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Lyrics Selector"))
 class DREAMUMG_API UDreamTextAnimationLyricsSelector : public UDreamTextAnimationSelectorBase
 {
 	GENERATED_BODY()
@@ -211,7 +278,7 @@ protected:
 	virtual bool EvaluateSelectorValue(const FDreamTextAnimationGlyphContext& GlyphContext, const FDreamTextAnimationSelectionResult& SelectionResult, float EffectiveOffset, float& OutRawValue) const override;
 };
 
-UCLASS(Abstract, BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories)
+UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories)
 class DREAMUMG_API UDreamTextAnimationExecutorBase : public UObject
 {
 	GENERATED_BODY()
@@ -223,6 +290,30 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Executor|Window", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float End = 1.0f;
 
+	UFUNCTION(BlueprintCallable, Category = "Animation")
+	void ResetExecutorState();
+
+	UFUNCTION(BlueprintPure, Category = "Animation")
+	bool NeedsTick() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	virtual void PlayPlayback();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	virtual void PausePlayback();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	virtual void ResumePlayback();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	virtual void StopPlayback();
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Playback")
+	virtual bool IsPlaying() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Playback")
+	virtual bool IsPaused() const;
+
 	virtual void ResetRuntimeState();
 	virtual bool RequiresTick() const;
 	virtual bool TickExecutor(float DeltaTime, const FDreamTextAnimationLayoutContext& LayoutContext);
@@ -232,7 +323,7 @@ protected:
 	bool ResolveExecutorAlpha(const FDreamTextAnimationSelectionResult& SelectionResult, float& OutAlpha) const;
 };
 
-UCLASS(Abstract, BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories)
+UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories)
 class DREAMUMG_API UDreamTextAnimationEaseExecutorBase : public UDreamTextAnimationExecutorBase
 {
 	GENERATED_BODY()
@@ -247,7 +338,7 @@ protected:
 	virtual void ApplyEasedGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, float Weight, FDreamTextAnimationGlyphState& InOutGlyphState) const PURE_VIRTUAL(UDreamTextAnimationEaseExecutorBase::ApplyEasedGlyph, );
 };
 
-UCLASS(Abstract, BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories)
+UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories)
 class DREAMUMG_API UDreamTextAnimationWaveExecutorBase : public UDreamTextAnimationExecutorBase
 {
 	GENERATED_BODY()
@@ -262,6 +353,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Executor")
 	bool bFlipDirection = false;
 
+	virtual void PlayPlayback() override;
+	virtual void PausePlayback() override;
+	virtual void ResumePlayback() override;
+	virtual void StopPlayback() override;
+	virtual bool IsPlaying() const override;
+	virtual bool IsPaused() const override;
+
 	virtual void ResetRuntimeState() override;
 	virtual bool RequiresTick() const override;
 	virtual bool TickExecutor(float DeltaTime, const FDreamTextAnimationLayoutContext& LayoutContext) override;
@@ -273,10 +371,13 @@ protected:
 
 protected:
 	UPROPERTY(Transient)
+	bool bPlaybackPaused = false;
+
+	UPROPERTY(Transient)
 	float RuntimeTime = 0.0f;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Alpha Executor"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Alpha Executor"))
 class DREAMUMG_API UDreamTextAnimationAlphaExecutor : public UDreamTextAnimationEaseExecutorBase
 {
 	GENERATED_BODY()
@@ -289,7 +390,7 @@ protected:
 	virtual void ApplyEasedGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, float Weight, FDreamTextAnimationGlyphState& InOutGlyphState) const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Color Executor"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Color Executor"))
 class DREAMUMG_API UDreamTextAnimationColorExecutor : public UDreamTextAnimationEaseExecutorBase
 {
 	GENERATED_BODY()
@@ -305,7 +406,7 @@ protected:
 	virtual void ApplyEasedGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, float Weight, FDreamTextAnimationGlyphState& InOutGlyphState) const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Color Random Executor"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Color Random Executor"))
 class DREAMUMG_API UDreamTextAnimationColorRandomExecutor : public UDreamTextAnimationEaseExecutorBase
 {
 	GENERATED_BODY()
@@ -327,7 +428,7 @@ protected:
 	virtual void ApplyEasedGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, float Weight, FDreamTextAnimationGlyphState& InOutGlyphState) const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Position Executor"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Position Executor"))
 class DREAMUMG_API UDreamTextAnimationPositionExecutor : public UDreamTextAnimationEaseExecutorBase
 {
 	GENERATED_BODY()
@@ -340,7 +441,7 @@ protected:
 	virtual void ApplyEasedGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, float Weight, FDreamTextAnimationGlyphState& InOutGlyphState) const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Position Random Executor"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Position Random Executor"))
 class DREAMUMG_API UDreamTextAnimationPositionRandomExecutor : public UDreamTextAnimationEaseExecutorBase
 {
 	GENERATED_BODY()
@@ -359,7 +460,7 @@ protected:
 	virtual void ApplyEasedGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, float Weight, FDreamTextAnimationGlyphState& InOutGlyphState) const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Position Wave Executor"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Position Wave Executor"))
 class DREAMUMG_API UDreamTextAnimationPositionWaveExecutor : public UDreamTextAnimationWaveExecutorBase
 {
 	GENERATED_BODY()
@@ -373,7 +474,7 @@ protected:
 	virtual void ApplyWaveGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, float Weight, float WaveValue, FDreamTextAnimationGlyphState& InOutGlyphState) const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Rotation Random Executor"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Rotation Random Executor"))
 class DREAMUMG_API UDreamTextAnimationRotationRandomExecutor : public UDreamTextAnimationEaseExecutorBase
 {
 	GENERATED_BODY()
@@ -392,7 +493,7 @@ protected:
 	virtual void ApplyEasedGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, float Weight, FDreamTextAnimationGlyphState& InOutGlyphState) const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Rotation Wave Executor"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Rotation Wave Executor"))
 class DREAMUMG_API UDreamTextAnimationRotationWaveExecutor : public UDreamTextAnimationWaveExecutorBase
 {
 	GENERATED_BODY()
@@ -406,7 +507,7 @@ protected:
 	virtual void ApplyWaveGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, float Weight, float WaveValue, FDreamTextAnimationGlyphState& InOutGlyphState) const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Scale Executor"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Scale Executor"))
 class DREAMUMG_API UDreamTextAnimationScaleExecutor : public UDreamTextAnimationEaseExecutorBase
 {
 	GENERATED_BODY()
@@ -419,7 +520,7 @@ protected:
 	virtual void ApplyEasedGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, float Weight, FDreamTextAnimationGlyphState& InOutGlyphState) const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Scale Random Executor"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Scale Random Executor"))
 class DREAMUMG_API UDreamTextAnimationScaleRandomExecutor : public UDreamTextAnimationEaseExecutorBase
 {
 	GENERATED_BODY()
@@ -438,7 +539,7 @@ protected:
 	virtual void ApplyEasedGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, float Weight, FDreamTextAnimationGlyphState& InOutGlyphState) const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Scale Wave Executor"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Scale Wave Executor"))
 class DREAMUMG_API UDreamTextAnimationScaleWaveExecutor : public UDreamTextAnimationWaveExecutorBase
 {
 	GENERATED_BODY()
@@ -452,7 +553,7 @@ protected:
 	virtual void ApplyWaveGlyph(const FDreamTextAnimationGlyphContext& GlyphContext, float Weight, float WaveValue, FDreamTextAnimationGlyphState& InOutGlyphState) const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Text Animation Player"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Text Animation Player"))
 class DREAMUMG_API UDreamTextAnimationPlayer : public UDreamTextAnimationPlayerBase
 {
 	GENERATED_BODY()
@@ -462,7 +563,7 @@ public:
 
 	virtual void PostLoad() override;
 
-	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Selector")
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, BlueprintGetter = GetSelector, BlueprintSetter = SetSelector, Category = "Selector")
 	TObjectPtr<UDreamTextAnimationSelectorBase> Selector;
 
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Executors")
@@ -474,8 +575,33 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Animation")
 	float GetOffset() const { return Selector != nullptr ? Selector->GetOffset() : Offset; }
 
+	UFUNCTION(BlueprintCallable, BlueprintSetter, Category = "Animation")
+	void SetSelector(UDreamTextAnimationSelectorBase* InSelector);
+
+	UFUNCTION(BlueprintPure, BlueprintGetter, Category = "Animation")
+	UDreamTextAnimationSelectorBase* GetSelector() const { return Selector; }
+
 	UFUNCTION(BlueprintCallable, Category = "Animation")
 	void SetExecutors(const TArray<UDreamTextAnimationExecutorBase*>& InExecutors);
+
+	UFUNCTION(BlueprintCallable, Category = "Animation")
+	void AddExecutor(UDreamTextAnimationExecutorBase* InExecutor);
+
+	UFUNCTION(BlueprintCallable, Category = "Animation")
+	bool RemoveExecutor(UDreamTextAnimationExecutorBase* InExecutor);
+
+	UFUNCTION(BlueprintCallable, Category = "Animation")
+	void ClearExecutors();
+
+	UFUNCTION(BlueprintPure, Category = "Animation", meta = (DisplayName = "Get Executors"))
+	TArray<UDreamTextAnimationExecutorBase*> GetExecutorsCopy() const;
+
+	virtual void PlayPlayback() override;
+	virtual void PausePlayback() override;
+	virtual void ResumePlayback() override;
+	virtual void StopPlayback() override;
+	virtual bool IsPlaying() const override;
+	virtual bool IsPaused() const override;
 
 	virtual void ResetRuntimeState() override;
 	virtual bool RequiresTick() const override;

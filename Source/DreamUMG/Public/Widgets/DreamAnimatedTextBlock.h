@@ -11,7 +11,7 @@
 
 class SDreamAnimatedTextBlock;
 
-UCLASS(meta = (DisplayName = "Dream Animated Text"))
+UCLASS(BlueprintType, Blueprintable, meta = (DisplayName = "Dream Animated Text"))
 class DREAMUMG_API UDreamAnimatedTextBlock : public UTextLayoutWidget
 {
 	GENERATED_BODY()
@@ -43,7 +43,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	int32 VisibleCharacterCount;
 
-	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Animation", meta = (DisplayName = "Animation Player"))
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, BlueprintGetter = GetAnimationPlayer, BlueprintSetter = SetAnimationPlayer, Category = "Animation", meta = (DisplayName = "Animation Player"))
 	TObjectPtr<UDreamTextAnimationPlayerBase> AnimationPlayer;
 
 	UFUNCTION(BlueprintCallable, Category = "Widget")
@@ -76,8 +76,29 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Animation")
 	void SetAnimationPlayer(UDreamTextAnimationPlayerBase* InAnimationPlayer);
 
+	UFUNCTION(BlueprintPure, BlueprintGetter, Category = "Animation")
+	UDreamTextAnimationPlayerBase* GetAnimationPlayer() const { return AnimationPlayer; }
+
 	UFUNCTION(BlueprintCallable, Category = "Animation")
 	void ResetAnimationState();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	void PlayAnimation();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	void PauseAnimation();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	void ResumeAnimation();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Playback")
+	void StopAnimation();
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Playback")
+	bool IsAnimationPlaying() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Playback")
+	bool IsAnimationPaused() const;
 
 	virtual void PostLoad() override;
 	virtual void SynchronizeProperties() override;

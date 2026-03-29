@@ -8,7 +8,7 @@
 
 class SDreamCurvedBox;
 
-UCLASS(meta = (DisplayName = "Dream Curved Box"))
+UCLASS(BlueprintType, Blueprintable, meta = (DisplayName = "Dream Curved Box"))
 class DREAMUMG_API UDreamCurvedBox : public UContentWidget
 {
 	GENERATED_BODY()

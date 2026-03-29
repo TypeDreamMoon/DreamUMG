@@ -130,7 +130,84 @@ void UDreamAnimatedTextBlock::ResetAnimationState()
 	if (MyAnimatedTextBlock.IsValid())
 	{
 		MyAnimatedTextBlock->ResetAnimationState();
+		return;
 	}
+
+	if (AnimationPlayer != nullptr)
+	{
+		AnimationPlayer->ResetRuntimeState();
+		InvalidateLayoutAndVolatility();
+	}
+}
+
+void UDreamAnimatedTextBlock::PlayAnimation()
+{
+	if (MyAnimatedTextBlock.IsValid())
+	{
+		MyAnimatedTextBlock->PlayAnimation();
+		return;
+	}
+
+	if (AnimationPlayer != nullptr)
+	{
+		AnimationPlayer->PlayPlayback();
+		InvalidateLayoutAndVolatility();
+	}
+}
+
+void UDreamAnimatedTextBlock::PauseAnimation()
+{
+	if (MyAnimatedTextBlock.IsValid())
+	{
+		MyAnimatedTextBlock->PauseAnimation();
+		return;
+	}
+
+	if (AnimationPlayer != nullptr)
+	{
+		AnimationPlayer->PausePlayback();
+		InvalidateLayoutAndVolatility();
+	}
+}
+
+void UDreamAnimatedTextBlock::ResumeAnimation()
+{
+	if (MyAnimatedTextBlock.IsValid())
+	{
+		MyAnimatedTextBlock->ResumeAnimation();
+		return;
+	}
+
+	if (AnimationPlayer != nullptr)
+	{
+		AnimationPlayer->ResumePlayback();
+		InvalidateLayoutAndVolatility();
+	}
+}
+
+void UDreamAnimatedTextBlock::StopAnimation()
+{
+	if (MyAnimatedTextBlock.IsValid())
+	{
+		MyAnimatedTextBlock->StopAnimation();
+		return;
+	}
+
+	if (AnimationPlayer != nullptr)
+	{
+		AnimationPlayer->StopPlayback();
+		InvalidateLayoutAndVolatility();
+	}
+}
+
+bool UDreamAnimatedTextBlock::IsAnimationPlaying() const
+{
+	return AnimationPlayer != nullptr && AnimationPlayer->IsPlaying();
+}
+
+bool UDreamAnimatedTextBlock::IsAnimationPaused() const
+{
+	return AnimationPlayer != nullptr && AnimationPlayer->IsPaused();
 }
 
 void UDreamAnimatedTextBlock::SynchronizeProperties()

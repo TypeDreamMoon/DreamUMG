@@ -8,7 +8,7 @@
 
 class SDreamPseudo3DBox;
 
-UCLASS(meta = (DisplayName = "Dream Pseudo 3D Box"))
+UCLASS(BlueprintType, Blueprintable, meta = (DisplayName = "Dream Pseudo 3D Box"))
 class DREAMUMG_API UDreamPseudo3DBox : public UContentWidget
 {
 	GENERATED_BODY()

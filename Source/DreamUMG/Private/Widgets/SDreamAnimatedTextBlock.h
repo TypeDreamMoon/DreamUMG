@@ -30,6 +30,12 @@ public:
 	void SetVisibleCharacterCount(int32 InVisibleCharacterCount);
 	void SetAnimationPlayer(UDreamTextAnimationPlayerBase* InAnimationPlayer);
 	void ResetAnimationState();
+	void PlayAnimation();
+	void PauseAnimation();
+	void ResumeAnimation();
+	void StopAnimation();
+	bool IsAnimationPlaying() const;
+	bool IsAnimationPaused() const;
 
 	void SetTextShapingMethod(TOptional<ETextShapingMethod> InTextShapingMethod);
 	void SetTextFlowDirection(TOptional<ETextFlowDirection> InTextFlowDirection);

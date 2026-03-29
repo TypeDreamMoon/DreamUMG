@@ -13,15 +13,19 @@
 
 class SWidget;
 class UDreamSlateWidgetComponent;
+class UDreamWidgetComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDreamSlate3DButtonClicked);
 
-UCLASS(Abstract, BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories)
+UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories)
 class DREAMUMG_API UDreamSlate3DWidget : public UObject
 {
 	GENERATED_BODY()
 
 public:
+	UFUNCTION(BlueprintCallable, Category = "Dream Slate")
+	void RefreshOwner();
+
 	virtual TSharedRef<SWidget> BuildWidget() const;
 
 #if WITH_EDITOR
@@ -30,10 +34,10 @@ public:
 
 protected:
 	static TSharedRef<SWidget> BuildChildWidget(const UDreamSlate3DWidget* Child);
-	UDreamSlateWidgetComponent* FindOwningComponent() const;
+	void NotifyOwnerChanged() const;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Slate 3D Text"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Slate 3D Text"))
 class DREAMUMG_API UDreamSlate3DText : public UDreamSlate3DWidget
 {
 	GENERATED_BODY()
@@ -57,7 +61,7 @@ public:
 	virtual TSharedRef<SWidget> BuildWidget() const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Slate 3D Image"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Slate 3D Image"))
 class DREAMUMG_API UDreamSlate3DImage : public UDreamSlate3DWidget
 {
 	GENERATED_BODY()
@@ -75,13 +79,13 @@ public:
 	virtual TSharedRef<SWidget> BuildWidget() const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Slate 3D Border"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Slate 3D Border"))
 class DREAMUMG_API UDreamSlate3DBorder : public UDreamSlate3DWidget
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Content")
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, BlueprintGetter = GetContentWidget, BlueprintSetter = SetContentWidget, Category = "Content")
 	TObjectPtr<UDreamSlate3DWidget> Content;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Layout")
@@ -96,16 +100,22 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Layout")
 	TEnumAsByte<EVerticalAlignment> VerticalAlignment = VAlign_Fill;
 
+	UFUNCTION(BlueprintCallable, BlueprintSetter, Category = "Dream Slate")
+	void SetContentWidget(UDreamSlate3DWidget* InContent);
+
+	UFUNCTION(BlueprintPure, BlueprintGetter, Category = "Dream Slate")
+	UDreamSlate3DWidget* GetContentWidget() const { return Content; }
+
 	virtual TSharedRef<SWidget> BuildWidget() const override;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Slate 3D Button"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Slate 3D Button"))
 class DREAMUMG_API UDreamSlate3DButton : public UDreamSlate3DWidget
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Content")
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, BlueprintGetter = GetContentWidget, BlueprintSetter = SetContentWidget, Category = "Content")
 	TObjectPtr<UDreamSlate3DWidget> Content;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content")
@@ -122,6 +132,12 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FDreamSlate3DButtonClicked OnClicked;
+
+	UFUNCTION(BlueprintCallable, BlueprintSetter, Category = "Dream Slate")
+	void SetContentWidget(UDreamSlate3DWidget* InContent);
+
+	UFUNCTION(BlueprintPure, BlueprintGetter, Category = "Dream Slate")
+	UDreamSlate3DWidget* GetContentWidget() const { return Content; }
 
 	virtual TSharedRef<SWidget> BuildWidget() const override;
 
@@ -147,7 +163,7 @@ struct DREAMUMG_API FDreamSlate3DVerticalBoxSlot
 	TEnumAsByte<EVerticalAlignment> VerticalAlignment = VAlign_Fill;
 };
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Slate 3D Vertical Box"))
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, CollapseCategories, meta = (DisplayName = "Slate 3D Vertical Box"))
 class DREAMUMG_API UDreamSlate3DVerticalBox : public UDreamSlate3DWidget
 {
 	GENERATED_BODY()
@@ -158,6 +174,21 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Content")
 	TArray<FDreamSlate3DVerticalBoxSlot> Children;
+
+	UFUNCTION(BlueprintCallable, Category = "Dream Slate")
+	int32 AddChildWidget(UDreamSlate3DWidget* InContent);
+
+	UFUNCTION(BlueprintCallable, Category = "Dream Slate")
+	int32 AddChildSlot(const FDreamSlate3DVerticalBoxSlot& InSlot);
+
+	UFUNCTION(BlueprintCallable, Category = "Dream Slate")
+	bool RemoveChildWidget(UDreamSlate3DWidget* InContent);
+
+	UFUNCTION(BlueprintCallable, Category = "Dream Slate")
+	void ClearChildren();
+
+	UFUNCTION(BlueprintPure, Category = "Dream Slate")
+	int32 GetChildrenCount() const { return Children.Num(); }
 
 	virtual TSharedRef<SWidget> BuildWidget() const override;
 };

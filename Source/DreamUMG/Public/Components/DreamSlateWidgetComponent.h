@@ -15,11 +15,14 @@ class DREAMUMG_API UDreamSlateWidgetComponent : public UWidgetComponent
 public:
 	UDreamSlateWidgetComponent(const FObjectInitializer& ObjectInitializer);
 
-	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Dream Slate 3D")
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, BlueprintGetter = GetRootWidget, BlueprintSetter = SetRootWidget, Category = "Dream Slate 3D")
 	TObjectPtr<UDreamSlate3DWidget> RootWidget;
 
-	UFUNCTION(BlueprintCallable, Category = "Dream Slate 3D")
+	UFUNCTION(BlueprintCallable, BlueprintSetter, Category = "Dream Slate 3D")
 	void SetRootWidget(UDreamSlate3DWidget* InRootWidget);
+
+	UFUNCTION(BlueprintPure, BlueprintGetter, Category = "Dream Slate 3D")
+	UDreamSlate3DWidget* GetRootWidget() const { return RootWidget; }
 
 	UFUNCTION(BlueprintCallable, Category = "Dream Slate 3D")
 	void RebuildSlateWidget();

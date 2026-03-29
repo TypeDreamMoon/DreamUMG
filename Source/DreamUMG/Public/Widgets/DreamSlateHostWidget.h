@@ -9,7 +9,7 @@
 
 class SBox;
 
-UCLASS(meta = (DisplayName = "Dream Slate Host"))
+UCLASS(BlueprintType, Blueprintable, meta = (DisplayName = "Dream Slate Host"))
 class DREAMUMG_API UDreamSlateHostWidget : public UWidget
 {
 	GENERATED_BODY()
@@ -17,11 +17,14 @@ class DREAMUMG_API UDreamSlateHostWidget : public UWidget
 public:
 	UDreamSlateHostWidget(const FObjectInitializer& ObjectInitializer);
 
-	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Dream Slate")
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, BlueprintGetter = GetRootWidget, BlueprintSetter = SetRootWidget, Category = "Dream Slate")
 	TObjectPtr<UDreamSlate3DWidget> RootWidget;
 
-	UFUNCTION(BlueprintCallable, Category = "Dream Slate")
+	UFUNCTION(BlueprintCallable, BlueprintSetter, Category = "Dream Slate")
 	void SetRootWidget(UDreamSlate3DWidget* InRootWidget);
+
+	UFUNCTION(BlueprintPure, BlueprintGetter, Category = "Dream Slate")
+	UDreamSlate3DWidget* GetRootWidget() const { return RootWidget; }
 
 	UFUNCTION(BlueprintCallable, Category = "Dream Slate")
 	void RefreshSlateContent();

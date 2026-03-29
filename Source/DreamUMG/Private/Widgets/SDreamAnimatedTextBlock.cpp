@@ -113,6 +113,62 @@ void SDreamAnimatedTextBlock::ResetAnimationState()
 	Invalidate(EInvalidateWidgetReason::Paint);
 }
 
+void SDreamAnimatedTextBlock::PlayAnimation()
+{
+	if (UDreamTextAnimationPlayerBase* Player = AnimationPlayer.Get())
+	{
+		Player->PlayPlayback();
+	}
+
+	RestartAnimationTimerIfNeeded();
+	Invalidate(EInvalidateWidgetReason::Paint);
+}
+
+void SDreamAnimatedTextBlock::PauseAnimation()
+{
+	if (UDreamTextAnimationPlayerBase* Player = AnimationPlayer.Get())
+	{
+		Player->PausePlayback();
+	}
+
+	RestartAnimationTimerIfNeeded();
+	Invalidate(EInvalidateWidgetReason::Paint);
+}
+
+void SDreamAnimatedTextBlock::ResumeAnimation()
+{
+	if (UDreamTextAnimationPlayerBase* Player = AnimationPlayer.Get())
+	{
+		Player->ResumePlayback();
+	}
+
+	RestartAnimationTimerIfNeeded();
+	Invalidate(EInvalidateWidgetReason::Paint);
+}
+
+void SDreamAnimatedTextBlock::StopAnimation()
+{
+	if (UDreamTextAnimationPlayerBase* Player = AnimationPlayer.Get())
+	{
+		Player->StopPlayback();
+	}
+
+	RestartAnimationTimerIfNeeded();
+	Invalidate(EInvalidateWidgetReason::Paint);
+}
+
+bool SDreamAnimatedTextBlock::IsAnimationPlaying() const
+{
+	const UDreamTextAnimationPlayerBase* Player = AnimationPlayer.Get();
+	return Player != nullptr && Player->IsPlaying();
+}
+
+bool SDreamAnimatedTextBlock::IsAnimationPaused() const
+{
+	const UDreamTextAnimationPlayerBase* Player = AnimationPlayer.Get();
+	return Player != nullptr && Player->IsPaused();
+}
+
 void SDreamAnimatedTextBlock::SetTextShapingMethod(TOptional<ETextShapingMethod> InTextShapingMethod)
 {
 	TextShapingMethod = InTextShapingMethod;

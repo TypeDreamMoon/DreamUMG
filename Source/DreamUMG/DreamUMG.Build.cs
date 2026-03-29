@@ -38,6 +38,10 @@ public class DreamUMG : ModuleRules
 			{
 				"CoreUObject",
 				"Engine",
+				"Projects",
+				"RHI",
+				"RenderCore",
+				"Renderer",
 				"Slate",
 				"SlateCore",
 				"UMG",

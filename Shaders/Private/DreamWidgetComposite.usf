@@ -1,0 +1,29 @@
+#include "/Engine/Public/Platform.ush"
+
+struct FVertexInput
+{
+	float3 Position : ATTRIBUTE0;
+	float2 UV : ATTRIBUTE1;
+};
+
+struct FVertexOutput
+{
+	float4 Position : SV_POSITION;
+	float2 UV : TEXCOORD0;
+};
+
+Texture2D WidgetTexture;
+SamplerState WidgetTextureSampler;
+
+FVertexOutput MainVS(FVertexInput Input)
+{
+	FVertexOutput Output;
+	Output.Position = float4(Input.Position, 1.0f);
+	Output.UV = Input.UV;
+	return Output;
+}
+
+float4 MainPS(FVertexOutput Input) : SV_Target0
+{
+	return WidgetTexture.Sample(WidgetTextureSampler, Input.UV);
+}

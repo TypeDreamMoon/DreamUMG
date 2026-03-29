@@ -2,11 +2,16 @@
 
 #include "DreamUMG.h"
 
+#include "Interfaces/IPluginManager.h"
+#include "Misc/Paths.h"
+#include "ShaderCore.h"
+
 #define LOCTEXT_NAMESPACE "FDreamUMGModule"
 
 void FDreamUMGModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+	const FString PluginShaderDir = FPaths::Combine(IPluginManager::Get().FindPlugin(TEXT("DreamUMG"))->GetBaseDir(), TEXT("Shaders"));
+	AddShaderSourceDirectoryMapping(TEXT("/Plugin/DreamUMG"), PluginShaderDir);
 }
 
 void FDreamUMGModule::ShutdownModule()

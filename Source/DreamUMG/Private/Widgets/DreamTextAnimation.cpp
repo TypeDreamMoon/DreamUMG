@@ -675,6 +675,7 @@ void UDreamTextAnimationPlayer::MigrateLegacySelectorData()
 	}
 
 	UDreamTextAnimationSelectorBase* MigratedSelector = nullptr;
+	
 	if (SelectorMode == EDreamTextAnimationPlayerMode::Random)
 	{
 		UDreamTextAnimationRandomSelector* RandomSelector = Cast<UDreamTextAnimationRandomSelector>(Selector);

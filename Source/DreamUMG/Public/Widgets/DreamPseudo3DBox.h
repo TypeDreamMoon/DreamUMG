@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Type Dream Moon All Rights Reserved.
 
 #pragma once
 
@@ -28,7 +28,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetDepthOffset, Category = "Pseudo 3D")
 	float DepthOffset;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetPerspectiveSegments, Category = "Pseudo 3D", meta = (ClampMin = "1", ClampMax = "12", UIMin = "1", UIMax = "8"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetPerspectiveSegments, Category = "Pseudo 3D", meta = (ClampMin = "1", ClampMax = "32", UIMin = "1", UIMax = "24"))
 	int32 PerspectiveSegments;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetTransformPivot, Category = "Pseudo 3D", meta = (ClampMin = "0.0", ClampMax = "1.0"))

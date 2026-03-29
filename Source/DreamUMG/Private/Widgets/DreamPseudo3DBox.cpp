@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Type Dream Moon All Rights Reserved.
 
 #include "Widgets/DreamPseudo3DBox.h"
 
@@ -17,7 +17,7 @@ UDreamPseudo3DBox::UDreamPseudo3DBox(const FObjectInitializer& ObjectInitializer
 	PerspectiveStrength = 0.35f;
 	FieldOfView = 45.0f;
 	DepthOffset = 0.0f;
-	PerspectiveSegments = 6;
+	PerspectiveSegments = 10;
 	TransformPivot = FVector2D(0.5f, 0.5f);
 	bIgnoreClipping = true;
 }
@@ -64,7 +64,7 @@ void UDreamPseudo3DBox::SetDepthOffset(float InDepthOffset)
 
 void UDreamPseudo3DBox::SetPerspectiveSegments(int32 InPerspectiveSegments)
 {
-	PerspectiveSegments = FMath::Clamp(InPerspectiveSegments, 1, 12);
+	PerspectiveSegments = FMath::Clamp(InPerspectiveSegments, 1, 32);
 	if (MyPseudo3DBox.IsValid())
 	{
 		MyPseudo3DBox->SetPerspectiveSegments(PerspectiveSegments);

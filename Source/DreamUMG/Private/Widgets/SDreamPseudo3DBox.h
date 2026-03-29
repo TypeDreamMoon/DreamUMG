@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Type Dream Moon All Rights Reserved.
 
 #pragma once
 
@@ -37,7 +37,8 @@ protected:
 
 private:
 	void InvalidatePseudo3DTransform();
-	FVector2f ProjectLocalPoint(const FVector2f& LocalPoint, const FVector2f& LocalSize, float CameraDistance, const FQuat& RotationQuat) const;
+	FVector BuildLocalPoint(const FVector2f& LocalPoint, const FVector2f& LocalSize) const;
+	FVector2f ProjectRotatedPoint(const FVector& RotatedPoint, const FVector2f& PivotPixels, float CameraDistance, float NearClipDistance) const;
 
 	FRotator Rotation = FRotator::ZeroRotator;
 	float PerspectiveStrength = 0.35f;

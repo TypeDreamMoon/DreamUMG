@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Type Dream Moon All Rights Reserved.
 
 #include "Widgets/SDreamPseudo3DBox.h"
 
@@ -6,11 +6,13 @@
 #include "Layout/Geometry.h"
 #include "Math/Quat.h"
 #include "Types/PaintArgs.h"
+#include "Widgets/WidgetPixelSnapping.h"
 #include "Widgets/SNullWidget.h"
 
 void SDreamPseudo3DBox::Construct(const FArguments& InArgs)
 {
 	ChildSlot.AttachWidget(InArgs._Content.Widget);
+	SetPixelSnapping(EWidgetPixelSnapping::Disabled);
 }
 
 void SDreamPseudo3DBox::SetContent(const TSharedRef<SWidget>& InContent)
@@ -59,7 +61,7 @@ void SDreamPseudo3DBox::SetDepthOffset(float InDepthOffset)
 
 void SDreamPseudo3DBox::SetPerspectiveSegments(int32 InPerspectiveSegments)
 {
-	const int32 ClampedSegments = FMath::Clamp(InPerspectiveSegments, 1, 12);
+	const int32 ClampedSegments = FMath::Clamp(InPerspectiveSegments, 1, 32);
 	if (PerspectiveSegments != ClampedSegments)
 	{
 		PerspectiveSegments = ClampedSegments;
@@ -113,55 +115,115 @@ int32 SDreamPseudo3DBox::OnPaint(const FPaintArgs& Args, const FGeometry& Allott
 	const float EffectiveFieldOfView = FMath::Lerp(1.0f, FieldOfView, FMath::Clamp(PerspectiveStrength, 0.0f, 1.0f));
 	const float LargestDimension = FMath::Max3(LocalSize.X, LocalSize.Y, 1.0f);
 	const float CameraDistance = 0.5f * LargestDimension / FMath::Tan(0.5f * FMath::DegreesToRadians(EffectiveFieldOfView));
+	const float NearClipDistance = FMath::Max(1.0f, CameraDistance * 0.05f);
 	const FQuat RotationQuat =
 		FQuat(FVector(0.0f, 0.0f, 1.0f), FMath::DegreesToRadians(Rotation.Roll)) *
 		FQuat(FVector(0.0f, 1.0f, 0.0f), FMath::DegreesToRadians(Rotation.Yaw)) *
 		FQuat(FVector(1.0f, 0.0f, 0.0f), FMath::DegreesToRadians(Rotation.Pitch));
+	const FVector2f PivotPixels = FVector2f(TransformPivot) * LocalSize;
 
-	const int32 SegmentCountX = FMath::Clamp(PerspectiveSegments, 1, 12);
-	const int32 SegmentCountY = FMath::Clamp(PerspectiveSegments, 1, 12);
-	int32 MaxLayer = LayerId;
+	const int32 SegmentCountX = FMath::Clamp(PerspectiveSegments, 1, 32);
+	const int32 SegmentCountY = FMath::Clamp(PerspectiveSegments, 1, 32);
+
+	struct FSegmentPaintData
+	{
+		float StartX = 0.0f;
+		float EndX = 0.0f;
+		float StartY = 0.0f;
+		float EndY = 0.0f;
+		float AverageDepth = 0.0f;
+		FVector2f TopLeft = FVector2f::ZeroVector;
+		FVector2f TopRight = FVector2f::ZeroVector;
+		FVector2f BottomLeft = FVector2f::ZeroVector;
+		FVector2f BottomRight = FVector2f::ZeroVector;
+	};
+
+	TArray<FSegmentPaintData, TInlineAllocator<128>> SegmentsToPaint;
+	SegmentsToPaint.Reserve(SegmentCountX * SegmentCountY);
 
 	for (int32 SegmentY = 0; SegmentY < SegmentCountY; ++SegmentY)
 	{
 		const float SegmentStartY = LocalSize.Y * static_cast<float>(SegmentY) / static_cast<float>(SegmentCountY);
 		const float SegmentEndY = LocalSize.Y * static_cast<float>(SegmentY + 1) / static_cast<float>(SegmentCountY);
-		const float SegmentHeight = FMath::Max(SegmentEndY - SegmentStartY, 1.0f);
-		const float CenterY = 0.5f * (SegmentStartY + SegmentEndY);
 
 		for (int32 SegmentX = 0; SegmentX < SegmentCountX; ++SegmentX)
 		{
 			const float SegmentStartX = LocalSize.X * static_cast<float>(SegmentX) / static_cast<float>(SegmentCountX);
 			const float SegmentEndX = LocalSize.X * static_cast<float>(SegmentX + 1) / static_cast<float>(SegmentCountX);
-			const float SegmentWidth = FMath::Max(SegmentEndX - SegmentStartX, 1.0f);
-			const float CenterX = 0.5f * (SegmentStartX + SegmentEndX);
+			const FVector TopLeft3D = RotationQuat.RotateVector(BuildLocalPoint(FVector2f(SegmentStartX, SegmentStartY), LocalSize));
+			const FVector TopRight3D = RotationQuat.RotateVector(BuildLocalPoint(FVector2f(SegmentEndX, SegmentStartY), LocalSize));
+			const FVector BottomLeft3D = RotationQuat.RotateVector(BuildLocalPoint(FVector2f(SegmentStartX, SegmentEndY), LocalSize));
+			const FVector BottomRight3D = RotationQuat.RotateVector(BuildLocalPoint(FVector2f(SegmentEndX, SegmentEndY), LocalSize));
 
-			const FVector2f TopLeft = ProjectLocalPoint(FVector2f(SegmentStartX, SegmentStartY), LocalSize, CameraDistance, RotationQuat);
-			const FVector2f TopRight = ProjectLocalPoint(FVector2f(SegmentEndX, SegmentStartY), LocalSize, CameraDistance, RotationQuat);
-			const FVector2f BottomLeft = ProjectLocalPoint(FVector2f(SegmentStartX, SegmentEndY), LocalSize, CameraDistance, RotationQuat);
-			const FVector2f BottomRight = ProjectLocalPoint(FVector2f(SegmentEndX, SegmentEndY), LocalSize, CameraDistance, RotationQuat);
+			const FVector TangentX = ((TopRight3D - TopLeft3D) + (BottomRight3D - BottomLeft3D)) * 0.5f;
+			const FVector TangentY = ((BottomLeft3D - TopLeft3D) + (BottomRight3D - TopRight3D)) * 0.5f;
+			const FVector SurfaceNormal = FVector::CrossProduct(TangentX, TangentY);
 
-			const FVector2f BasisX = ((TopRight - TopLeft) + (BottomRight - BottomLeft)) * (0.5f / SegmentWidth);
-			const FVector2f BasisY = ((BottomLeft - TopLeft) + (BottomRight - TopRight)) * (0.5f / SegmentHeight);
-			const FMatrix2x2 RenderMatrix(BasisX.X, BasisX.Y, BasisY.X, BasisY.Y);
-			const FVector2f CenterProjected = (TopLeft + TopRight + BottomLeft + BottomRight) * 0.25f;
-			const FVector2f Translation = CenterProjected - TransformPoint(RenderMatrix, FVector2f(CenterX, CenterY));
-			const FSlateRenderTransform SegmentTransform(Concatenate(RenderMatrix, Translation));
-			const FGeometry SegmentGeometry = AllottedGeometry.MakeChild(LocalSize, FSlateLayoutTransform(), SegmentTransform, FVector2f::ZeroVector);
+			if (SurfaceNormal.Z <= UE_KINDA_SMALL_NUMBER)
+			{
+				continue;
+			}
 
-			const FSlateClippingZone SegmentClip(
-				AllottedGeometry.LocalToAbsolute(TopLeft),
-				AllottedGeometry.LocalToAbsolute(TopRight),
-				AllottedGeometry.LocalToAbsolute(BottomLeft),
-				AllottedGeometry.LocalToAbsolute(BottomRight));
+			const float TopLeftDistance = CameraDistance - TopLeft3D.Z;
+			const float TopRightDistance = CameraDistance - TopRight3D.Z;
+			const float BottomLeftDistance = CameraDistance - BottomLeft3D.Z;
+			const float BottomRightDistance = CameraDistance - BottomRight3D.Z;
+			const float MinDistance = FMath::Min(
+				FMath::Min(TopLeftDistance, TopRightDistance),
+				FMath::Min(BottomLeftDistance, BottomRightDistance));
 
-			OutDrawElements.PushClip(SegmentClip);
-			const FSlateRect SegmentCullingRect = bIgnoreClipping
-				? SegmentClip.GetBoundingBox()
-				: MyCullingRect.IntersectionWith(SegmentClip.GetBoundingBox());
-			MaxLayer = FMath::Max(MaxLayer, ChildWidget->Paint(Args.WithNewParent(this), SegmentGeometry, SegmentCullingRect, OutDrawElements, LayerId + 1, CompoundedWidgetStyle, bShouldBeEnabled));
-			OutDrawElements.PopClip();
+			// Once a segment reaches the near plane, affine reprojection becomes unstable and causes spikes.
+			if (MinDistance <= NearClipDistance)
+			{
+				continue;
+			}
+
+			FSegmentPaintData& SegmentData = SegmentsToPaint.AddDefaulted_GetRef();
+			SegmentData.StartX = SegmentStartX;
+			SegmentData.EndX = SegmentEndX;
+			SegmentData.StartY = SegmentStartY;
+			SegmentData.EndY = SegmentEndY;
+			SegmentData.AverageDepth = 0.25f * (TopLeft3D.Z + TopRight3D.Z + BottomLeft3D.Z + BottomRight3D.Z);
+			SegmentData.TopLeft = ProjectRotatedPoint(TopLeft3D, PivotPixels, CameraDistance, NearClipDistance);
+			SegmentData.TopRight = ProjectRotatedPoint(TopRight3D, PivotPixels, CameraDistance, NearClipDistance);
+			SegmentData.BottomLeft = ProjectRotatedPoint(BottomLeft3D, PivotPixels, CameraDistance, NearClipDistance);
+			SegmentData.BottomRight = ProjectRotatedPoint(BottomRight3D, PivotPixels, CameraDistance, NearClipDistance);
 		}
+	}
+
+	SegmentsToPaint.Sort([](const FSegmentPaintData& A, const FSegmentPaintData& B)
+	{
+		return A.AverageDepth < B.AverageDepth;
+	});
+
+	int32 MaxLayer = LayerId;
+	for (const FSegmentPaintData& SegmentData : SegmentsToPaint)
+	{
+		const float SegmentWidth = FMath::Max(SegmentData.EndX - SegmentData.StartX, 1.0f);
+		const float SegmentHeight = FMath::Max(SegmentData.EndY - SegmentData.StartY, 1.0f);
+		const float CenterX = 0.5f * (SegmentData.StartX + SegmentData.EndX);
+		const float CenterY = 0.5f * (SegmentData.StartY + SegmentData.EndY);
+
+		const FVector2f BasisX = ((SegmentData.TopRight - SegmentData.TopLeft) + (SegmentData.BottomRight - SegmentData.BottomLeft)) * (0.5f / SegmentWidth);
+		const FVector2f BasisY = ((SegmentData.BottomLeft - SegmentData.TopLeft) + (SegmentData.BottomRight - SegmentData.TopRight)) * (0.5f / SegmentHeight);
+		const FMatrix2x2 RenderMatrix(BasisX.X, BasisX.Y, BasisY.X, BasisY.Y);
+		const FVector2f CenterProjected = (SegmentData.TopLeft + SegmentData.TopRight + SegmentData.BottomLeft + SegmentData.BottomRight) * 0.25f;
+		const FVector2f Translation = CenterProjected - TransformPoint(RenderMatrix, FVector2f(CenterX, CenterY));
+		const FSlateRenderTransform SegmentTransform(Concatenate(RenderMatrix, Translation));
+		const FGeometry SegmentGeometry = AllottedGeometry.MakeChild(LocalSize, FSlateLayoutTransform(), SegmentTransform, FVector2f::ZeroVector);
+
+		const FSlateClippingZone SegmentClip(
+			AllottedGeometry.LocalToAbsolute(SegmentData.TopLeft),
+			AllottedGeometry.LocalToAbsolute(SegmentData.TopRight),
+			AllottedGeometry.LocalToAbsolute(SegmentData.BottomLeft),
+			AllottedGeometry.LocalToAbsolute(SegmentData.BottomRight));
+
+		OutDrawElements.PushClip(SegmentClip);
+		const FSlateRect SegmentCullingRect = bIgnoreClipping
+			? SegmentClip.GetBoundingBox()
+			: MyCullingRect.IntersectionWith(SegmentClip.GetBoundingBox());
+		MaxLayer = FMath::Max(MaxLayer, ChildWidget->Paint(Args.WithNewParent(this), SegmentGeometry, SegmentCullingRect, OutDrawElements, LayerId + 1, CompoundedWidgetStyle, bShouldBeEnabled));
+		OutDrawElements.PopClip();
 	}
 
 	return MaxLayer;
@@ -190,15 +252,18 @@ void SDreamPseudo3DBox::OnArrangeChildren(const FGeometry& AllottedGeometry, FAr
 	ArrangedChildren.AddWidget(ChildVisibility, AllottedGeometry.MakeChild(ChildWidget, AllottedGeometry.GetLocalSize(), FSlateLayoutTransform()));
 }
 
-FVector2f SDreamPseudo3DBox::ProjectLocalPoint(const FVector2f& LocalPoint, const FVector2f& LocalSize, float CameraDistance, const FQuat& RotationQuat) const
+FVector SDreamPseudo3DBox::BuildLocalPoint(const FVector2f& LocalPoint, const FVector2f& LocalSize) const
 {
 	const FVector2f PivotPixels = FVector2f(TransformPivot) * LocalSize;
-	const FVector LocalPoint3D(
+	return FVector(
 		LocalPoint.X - PivotPixels.X,
 		LocalPoint.Y - PivotPixels.Y,
 		DepthOffset);
-	const FVector RotatedPoint = RotationQuat.RotateVector(LocalPoint3D);
-	const float SafeDistance = FMath::Max(1.0f, CameraDistance - RotatedPoint.Z);
+}
+
+FVector2f SDreamPseudo3DBox::ProjectRotatedPoint(const FVector& RotatedPoint, const FVector2f& PivotPixels, float CameraDistance, float NearClipDistance) const
+{
+	const float SafeDistance = FMath::Max(NearClipDistance, CameraDistance - RotatedPoint.Z);
 	const float ProjectedScale = CameraDistance / SafeDistance;
 
 	return FVector2f(

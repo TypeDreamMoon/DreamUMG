@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Type Dream Moon All Rights Reserved.
 
 #include "Widgets/SDreamCurvedBox.h"
 
@@ -8,11 +8,13 @@
 #include "Rendering/DrawElements.h"
 #include "Rendering/SlateRenderTransform.h"
 #include "Types/PaintArgs.h"
+#include "Widgets/WidgetPixelSnapping.h"
 #include "Widgets/SNullWidget.h"
 
 void SDreamCurvedBox::Construct(const FArguments& InArgs)
 {
 	ChildSlot.AttachWidget(InArgs._Content.Widget);
+	SetPixelSnapping(EWidgetPixelSnapping::Disabled);
 }
 
 void SDreamCurvedBox::SetContent(const TSharedRef<SWidget>& InContent)
@@ -41,7 +43,7 @@ void SDreamCurvedBox::SetCurveAngle(float InCurveAngle)
 
 void SDreamCurvedBox::SetCurveSegments(int32 InCurveSegments)
 {
-	const int32 ClampedSegments = FMath::Clamp(InCurveSegments, 2, 64);
+	const int32 ClampedSegments = FMath::Clamp(InCurveSegments, 2, 128);
 	if (CurveSegments != ClampedSegments)
 	{
 		CurveSegments = ClampedSegments;
@@ -97,7 +99,7 @@ int32 SDreamCurvedBox::OnPaint(const FPaintArgs& Args, const FGeometry& Allotted
 		.BlendColorAndOpacityTint(GetColorAndOpacity())
 		.SetForegroundColor(bShouldBeEnabled ? GetForegroundColor() : GetDisabledForegroundColor());
 
-	const int32 SegmentCount = FMath::Clamp(CurveSegments, 2, 64);
+	const int32 SegmentCount = FMath::Clamp(CurveSegments, 2, 128);
 	const float LargestDimension = FMath::Max3(LocalSize.X, LocalSize.Y, 1.0f);
 	const float CameraDistance = LargestDimension * FMath::Lerp(8.0f, 1.25f, FMath::Clamp(PerspectiveStrength, 0.0f, 1.0f));
 	const FQuat RotationQuat =

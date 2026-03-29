@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Type Dream Moon All Rights Reserved.
 
 #include "Widgets/DreamCurvedBox.h"
 
@@ -15,7 +15,7 @@ UDreamCurvedBox::UDreamCurvedBox(const FObjectInitializer& ObjectInitializer)
 
 	Rotation = FRotator::ZeroRotator;
 	CurveAngle = 45.0f;
-	CurveSegments = 24;
+	CurveSegments = 32;
 	PerspectiveStrength = 0.35f;
 	DepthOffset = 0.0f;
 	TransformPivot = FVector2D(0.5f, 0.5f);
@@ -43,7 +43,7 @@ void UDreamCurvedBox::SetCurveAngle(float InCurveAngle)
 
 void UDreamCurvedBox::SetCurveSegments(int32 InCurveSegments)
 {
-	CurveSegments = FMath::Clamp(InCurveSegments, 2, 64);
+	CurveSegments = FMath::Clamp(InCurveSegments, 2, 128);
 	if (MyCurvedBox.IsValid())
 	{
 		MyCurvedBox->SetCurveSegments(CurveSegments);

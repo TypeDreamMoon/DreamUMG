@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Type Dream Moon All Rights Reserved.
 
 #pragma once
 
@@ -22,7 +22,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetCurveAngle, Category = "Curved", meta = (UIMin = "-180.0", UIMax = "180.0"))
 	float CurveAngle;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetCurveSegments, Category = "Curved", meta = (ClampMin = "2", UIMin = "2", UIMax = "64"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetCurveSegments, Category = "Curved", meta = (ClampMin = "2", ClampMax = "128", UIMin = "2", UIMax = "96"))
 	int32 CurveSegments;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, BlueprintSetter = SetPerspectiveStrength, Category = "Curved", meta = (ClampMin = "0.0", UIMin = "0.0", UIMax = "1.0"))

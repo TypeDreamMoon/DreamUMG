@@ -38,6 +38,7 @@ public class DreamUMG : ModuleRules
 			{
 				"CoreUObject",
 				"Engine",
+				"InputCore",
 				"Projects",
 				"RHI",
 				"RenderCore",

@@ -2,6 +2,8 @@
 
 #include "Widgets/SDreamMeshRetainerBox.h"
 
+#include "Blueprint/UserWidget.h"
+#include "Components/Button.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Input/HittestGrid.h"
@@ -12,9 +14,99 @@
 #include "Slate/WidgetRenderer.h"
 #include "Types/PaintArgs.h"
 #include "UObject/StrongObjectPtr.h"
+#include "Slate/SObjectWidget.h"
+#if WITH_ACCESSIBILITY
+#include "Widgets/Accessibility/SlateAccessibleWidgets.h"
+#endif
+#include "Widgets/Input/SButton.h"
 #include "Widgets/SNullWidget.h"
 #include "Widgets/SVirtualWindow.h"
 #include "Widgets/WidgetPixelSnapping.h"
+
+namespace
+{
+struct FVirtualButtonTarget
+{
+	TSharedPtr<SButton> SlateButton;
+	UButton* WidgetButton = nullptr;
+};
+
+FVirtualButtonTarget FindVirtualButtonInPath(const FWidgetPath& WidgetPath)
+{
+	TArray<UUserWidget*, TInlineAllocator<4>> OwnerUserWidgets;
+	for (int32 WidgetIndex = 0; WidgetIndex < WidgetPath.Widgets.Num(); ++WidgetIndex)
+	{
+		const FArrangedWidget& ArrangedWidget = WidgetPath.Widgets[WidgetIndex];
+		if (ArrangedWidget.Widget->GetWidgetClass().GetWidgetType() == SObjectWidget::StaticWidgetClass().GetWidgetType())
+		{
+			if (UUserWidget* UserWidget = StaticCastSharedRef<SObjectWidget>(ArrangedWidget.Widget)->GetWidgetObject())
+			{
+				OwnerUserWidgets.Add(UserWidget);
+			}
+		}
+	}
+
+	for (int32 WidgetIndex = WidgetPath.Widgets.Num() - 1; WidgetIndex >= 0; --WidgetIndex)
+	{
+		const TSharedRef<SWidget>& SlateWidget = WidgetPath.Widgets[WidgetIndex].Widget;
+		FVirtualButtonTarget Target;
+		if (SlateWidget->GetWidgetClass().GetWidgetType() == SButton::StaticWidgetClass().GetWidgetType())
+		{
+			Target.SlateButton = StaticCastSharedRef<SButton>(SlateWidget);
+		}
+
+		for (int32 OwnerIndex = OwnerUserWidgets.Num() - 1; OwnerIndex >= 0; --OwnerIndex)
+		{
+			if (UWidget* Widget = OwnerUserWidgets[OwnerIndex]->GetWidgetHandle(SlateWidget))
+			{
+				if (UButton* Button = Cast<UButton>(Widget))
+				{
+					Target.WidgetButton = Button;
+					break;
+				}
+			}
+		}
+
+		if (Target.SlateButton.IsValid() || Target.WidgetButton)
+		{
+			return Target;
+		}
+	}
+
+	return FVirtualButtonTarget();
+}
+
+TSharedPtr<SWidget> GetVirtualButtonWidget(const FVirtualButtonTarget& Target)
+{
+	if (Target.SlateButton.IsValid())
+	{
+		return StaticCastSharedPtr<SWidget>(Target.SlateButton);
+	}
+
+	return Target.WidgetButton ? Target.WidgetButton->GetCachedWidget() : TSharedPtr<SWidget>();
+}
+
+bool TriggerVirtualButtonClick(const FVirtualButtonTarget& Target)
+{
+#if WITH_ACCESSIBILITY
+	if (Target.SlateButton.IsValid())
+	{
+		TWeakPtr<SWidget> WeakSlateButton = StaticCastSharedPtr<SWidget>(Target.SlateButton);
+		FSlateAccessibleButton AccessibleButton(WeakSlateButton);
+		AccessibleButton.Activate();
+		return true;
+	}
+#endif
+
+	if (Target.WidgetButton)
+	{
+		Target.WidgetButton->OnClicked.Broadcast();
+		return true;
+	}
+
+	return false;
+}
+}
 
 SDreamMeshRetainerBox::SDreamMeshRetainerBox()
 {
@@ -195,7 +287,7 @@ FReply SDreamMeshRetainerBox::OnMouseButtonDown(const FGeometry& MyGeometry, con
 	FWidgetPath WidgetPath;
 	if (BuildRoutedPointerEvent(MyGeometry, MouseEvent, RoutedEvent, WidgetPath))
 	{
-		return FSlateApplication::Get().RoutePointerDownEvent(WidgetPath, RoutedEvent);
+		return RouteVirtualPointerDown(WidgetPath, RoutedEvent);
 	}
 
 	return FReply::Unhandled();
@@ -207,10 +299,13 @@ FReply SDreamMeshRetainerBox::OnMouseButtonUp(const FGeometry& MyGeometry, const
 	FWidgetPath WidgetPath;
 	if (BuildRoutedPointerEvent(MyGeometry, MouseEvent, RoutedEvent, WidgetPath))
 	{
-		return FSlateApplication::Get().RoutePointerUpEvent(WidgetPath, RoutedEvent);
+		return RouteVirtualPointerUp(WidgetPath, RoutedEvent);
 	}
 
-	return FReply::Unhandled();
+	PressedVirtualButtonWidget.Reset();
+	PressedVirtualButtonObject.Reset();
+	ClearVirtualHover(MouseEvent);
+	return FReply::Handled().ReleaseMouseCapture();
 }
 
 FReply SDreamMeshRetainerBox::OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
@@ -219,9 +314,7 @@ FReply SDreamMeshRetainerBox::OnMouseMove(const FGeometry& MyGeometry, const FPo
 	FWidgetPath WidgetPath;
 	if (BuildRoutedPointerEvent(MyGeometry, MouseEvent, RoutedEvent, WidgetPath))
 	{
-		const bool bHandled = FSlateApplication::Get().RoutePointerMoveEvent(WidgetPath, RoutedEvent, false);
-		bHasVirtualHover = true;
-		return bHandled ? FReply::Handled() : FReply::Unhandled();
+		return RouteVirtualPointerMove(WidgetPath, RoutedEvent);
 	}
 
 	ClearVirtualHover(MouseEvent);
@@ -254,6 +347,8 @@ FReply SDreamMeshRetainerBox::OnMouseWheel(const FGeometry& MyGeometry, const FP
 
 void SDreamMeshRetainerBox::OnMouseLeave(const FPointerEvent& MouseEvent)
 {
+	PressedVirtualButtonWidget.Reset();
+	PressedVirtualButtonObject.Reset();
 	ClearVirtualHover(MouseEvent);
 	SCompoundWidget::OnMouseLeave(MouseEvent);
 }
@@ -537,20 +632,230 @@ bool SDreamMeshRetainerBox::BuildRoutedPointerEvent(const FGeometry& MyGeometry,
 	return true;
 }
 
+void SDreamMeshRetainerBox::UpdateVirtualHoverPath(const FWidgetPath& NewWidgetPath, const FPointerEvent& MouseEvent) const
+{
+	TArray<TWeakPtr<SWidget>> NewHoverWidgets;
+	NewHoverWidgets.Reserve(NewWidgetPath.Widgets.Num());
+	for (int32 WidgetIndex = 0; WidgetIndex < NewWidgetPath.Widgets.Num(); ++WidgetIndex)
+	{
+		const FArrangedWidget& ArrangedWidget = NewWidgetPath.Widgets[WidgetIndex];
+		if (!ArrangedWidget.Widget->Advanced_IsWindow())
+		{
+			NewHoverWidgets.Add(ArrangedWidget.Widget);
+		}
+	}
+
+	for (int32 PreviousIndex = LastVirtualHoverWidgets.Num() - 1; PreviousIndex >= 0; --PreviousIndex)
+	{
+		const TSharedPtr<SWidget> PreviousWidget = LastVirtualHoverWidgets[PreviousIndex].Pin();
+		if (!PreviousWidget.IsValid())
+		{
+			continue;
+		}
+
+		const bool bStillHovered = NewHoverWidgets.ContainsByPredicate([&PreviousWidget](const TWeakPtr<SWidget>& NewWidget)
+		{
+			return NewWidget.Pin() == PreviousWidget;
+		});
+
+		if (!bStillHovered)
+		{
+			PreviousWidget->OnMouseLeave(MouseEvent);
+		}
+	}
+
+	for (int32 WidgetIndex = 0; WidgetIndex < NewWidgetPath.Widgets.Num(); ++WidgetIndex)
+	{
+		const FArrangedWidget& ArrangedWidget = NewWidgetPath.Widgets[WidgetIndex];
+		if (ArrangedWidget.Widget->Advanced_IsWindow())
+		{
+			continue;
+		}
+
+		const bool bWasHovered = LastVirtualHoverWidgets.ContainsByPredicate([&ArrangedWidget](const TWeakPtr<SWidget>& PreviousWidget)
+		{
+			return PreviousWidget.Pin() == ArrangedWidget.Widget;
+		});
+
+		if (!bWasHovered)
+		{
+			ArrangedWidget.Widget->OnMouseEnter(ArrangedWidget.Geometry, MouseEvent);
+		}
+	}
+
+	LastVirtualHoverWidgets = MoveTemp(NewHoverWidgets);
+	bHasVirtualHover = LastVirtualHoverWidgets.Num() > 0;
+}
+
+FReply SDreamMeshRetainerBox::RouteVirtualPointerDown(const FWidgetPath& NewWidgetPath, const FPointerEvent& MouseEvent)
+{
+	UpdateVirtualHoverPath(NewWidgetPath, MouseEvent);
+
+	PressedVirtualButtonWidget.Reset();
+	PressedVirtualButtonObject.Reset();
+	const FVirtualButtonTarget PressedButton = FindVirtualButtonInPath(NewWidgetPath);
+	if (TSharedPtr<SWidget> PressedButtonWidget = GetVirtualButtonWidget(PressedButton))
+	{
+		PressedVirtualButtonObject = PressedButton.WidgetButton;
+		PressedVirtualButtonWidget = PressedButtonWidget;
+	}
+
+	FReply Reply = FReply::Unhandled();
+	for (int32 WidgetIndex = 0; WidgetIndex < NewWidgetPath.Widgets.Num(); ++WidgetIndex)
+	{
+		const FArrangedWidget& ArrangedWidget = NewWidgetPath.Widgets[WidgetIndex];
+		if (ArrangedWidget.Widget->Advanced_IsWindow())
+		{
+			continue;
+		}
+
+		Reply = ArrangedWidget.Widget->OnPreviewMouseButtonDown(ArrangedWidget.Geometry, MouseEvent);
+		if (Reply.IsEventHandled())
+		{
+			break;
+		}
+	}
+
+	if (!Reply.IsEventHandled())
+	{
+		for (int32 WidgetIndex = NewWidgetPath.Widgets.Num() - 1; WidgetIndex >= 0; --WidgetIndex)
+		{
+			const FArrangedWidget& ArrangedWidget = NewWidgetPath.Widgets[WidgetIndex];
+			if (ArrangedWidget.Widget->Advanced_IsWindow())
+			{
+				continue;
+			}
+
+			if (MouseEvent.IsTouchEvent())
+			{
+				Reply = ArrangedWidget.Widget->OnTouchStarted(ArrangedWidget.Geometry, MouseEvent);
+			}
+
+			if (!MouseEvent.IsTouchEvent() || !Reply.IsEventHandled())
+			{
+				Reply = ArrangedWidget.Widget->OnMouseButtonDown(ArrangedWidget.Geometry, MouseEvent);
+			}
+
+			if (Reply.IsEventHandled())
+			{
+				break;
+			}
+		}
+	}
+
+	if (Reply.IsEventHandled())
+	{
+		Reply.CaptureMouse(AsShared());
+	}
+
+	return Reply;
+}
+
+FReply SDreamMeshRetainerBox::RouteVirtualPointerUp(const FWidgetPath& NewWidgetPath, const FPointerEvent& MouseEvent)
+{
+	UpdateVirtualHoverPath(NewWidgetPath, MouseEvent);
+
+	const FVirtualButtonTarget ReleasedButton = FindVirtualButtonInPath(NewWidgetPath);
+	const bool bClickMethodNeedsManualDispatch = ReleasedButton.WidgetButton
+		? ReleasedButton.WidgetButton->GetClickMethod() == EButtonClickMethod::DownAndUp
+		: true;
+	const TSharedPtr<SWidget> ReleasedButtonWidget = GetVirtualButtonWidget(ReleasedButton);
+	const bool bShouldEmitVirtualClick = ReleasedButtonWidget.IsValid()
+		&& ReleasedButtonWidget == PressedVirtualButtonWidget.Pin()
+		&& (!PressedVirtualButtonObject.IsValid() || ReleasedButton.WidgetButton == PressedVirtualButtonObject.Get())
+		&& bClickMethodNeedsManualDispatch
+		&& (MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton || MouseEvent.IsTouchEvent());
+
+	FReply Reply = FReply::Unhandled();
+	for (int32 WidgetIndex = NewWidgetPath.Widgets.Num() - 1; WidgetIndex >= 0; --WidgetIndex)
+	{
+		const FArrangedWidget& ArrangedWidget = NewWidgetPath.Widgets[WidgetIndex];
+		if (ArrangedWidget.Widget->Advanced_IsWindow())
+		{
+			continue;
+		}
+
+		if (MouseEvent.IsTouchEvent())
+		{
+			Reply = ArrangedWidget.Widget->OnTouchEnded(ArrangedWidget.Geometry, MouseEvent);
+		}
+
+		if (!MouseEvent.IsTouchEvent() || !Reply.IsEventHandled())
+		{
+			Reply = ArrangedWidget.Widget->OnMouseButtonUp(ArrangedWidget.Geometry, MouseEvent);
+		}
+
+		if (Reply.IsEventHandled())
+		{
+			break;
+		}
+	}
+
+	if (bShouldEmitVirtualClick && TriggerVirtualButtonClick(ReleasedButton))
+	{
+		Reply = FReply::Handled();
+	}
+
+	PressedVirtualButtonWidget.Reset();
+	PressedVirtualButtonObject.Reset();
+
+	if (Reply.IsEventHandled())
+	{
+		Reply.ReleaseMouseCapture();
+	}
+
+	return Reply;
+}
+
+FReply SDreamMeshRetainerBox::RouteVirtualPointerMove(const FWidgetPath& NewWidgetPath, const FPointerEvent& MouseEvent) const
+{
+	UpdateVirtualHoverPath(NewWidgetPath, MouseEvent);
+
+	FReply Reply = FReply::Unhandled();
+	for (int32 WidgetIndex = NewWidgetPath.Widgets.Num() - 1; WidgetIndex >= 0; --WidgetIndex)
+	{
+		const FArrangedWidget& ArrangedWidget = NewWidgetPath.Widgets[WidgetIndex];
+		if (ArrangedWidget.Widget->Advanced_IsWindow())
+		{
+			continue;
+		}
+
+		Reply = ArrangedWidget.Widget->OnMouseMove(ArrangedWidget.Geometry, MouseEvent);
+		if (Reply.IsEventHandled())
+		{
+			break;
+		}
+	}
+
+	return Reply;
+}
+
 void SDreamMeshRetainerBox::ClearVirtualHover(const FPointerEvent& MouseEvent) const
 {
-	if (!bHasVirtualHover)
+	if (!bHasVirtualHover || bClearingVirtualHover)
 	{
 		return;
 	}
 
-	FSlateApplication::Get().RoutePointerMoveEvent(FWidgetPath(), MouseEvent, false);
+	TGuardValue<bool> ClearingGuard(bClearingVirtualHover, true);
 	bHasVirtualHover = false;
+	for (int32 PreviousIndex = LastVirtualHoverWidgets.Num() - 1; PreviousIndex >= 0; --PreviousIndex)
+	{
+		if (const TSharedPtr<SWidget> PreviousWidget = LastVirtualHoverWidgets[PreviousIndex].Pin())
+		{
+			PreviousWidget->OnMouseLeave(MouseEvent);
+		}
+	}
+	LastVirtualHoverWidgets.Reset();
 }
 
 void SDreamMeshRetainerBox::ReleaseRenderResources()
 {
 	bHasVirtualHover = false;
+	bClearingVirtualHover = false;
+	LastVirtualHoverWidgets.Reset();
+	PressedVirtualButtonWidget.Reset();
+	PressedVirtualButtonObject.Reset();
 	WidgetRenderer.Reset();
 	VirtualWindow.Reset();
 	HitTestGrid.Reset();

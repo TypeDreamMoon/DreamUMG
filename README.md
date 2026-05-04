@@ -53,6 +53,7 @@
 
 - `Dream Pseudo 3D Box`
 - `Dream Curved Box`
+- `Dream Flip Card Box`
 
 适合做：
 
@@ -178,6 +179,22 @@
 - `Depth Offset`
 - `Transform Pivot`
 
+如果想做真正的正反面翻牌：
+
+1. 放入 `Dream Flip Card Box`
+2. 在它下面放两个子控件
+   - 第 1 个子控件是正面
+   - 第 2 个子控件是背面
+3. 用蓝图时间轴或动画驱动 `Flip Angle`
+
+常用配置：
+
+- `Flip Angle = 0` 显示正面
+- `Flip Angle = 180` 显示背面
+- `Flip Angle = 360` 回到正面
+- `Mirror Back Face = true` 用于避免背面文字镜像
+- `Horizontal Segments` 越高，透视翻转边缘越平滑
+
 ### 3. 在 UMG 中使用 Dream Slate Host
 
 1. 放入 `Dream Slate Host`
@@ -275,6 +292,7 @@ Plugins/DreamUMG
 - `Public/Widgets/DreamTextAnimation.h`
 - `Public/Widgets/DreamPseudo3DBox.h`
 - `Public/Widgets/DreamCurvedBox.h`
+- `Public/Widgets/DreamFlipCardBox.h`
 - `Public/Widgets/DreamSlate3DWidgets.h`
 - `Public/Widgets/DreamSlateHostWidget.h`
 - `Public/Components/DreamSlateWidgetComponent.h`

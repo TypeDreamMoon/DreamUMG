@@ -6,6 +6,7 @@
 #include "Components/Button.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Framework/Application/SlateApplication.h"
+#include "InputCoreTypes.h"
 #include "Input/HittestGrid.h"
 #include "Layout/Geometry.h"
 #include "Layout/WidgetPath.h"
@@ -237,6 +238,11 @@ void SDreamFlipCardBox::SetOnUnhovered(FSimpleDelegate InOnUnhovered)
 	OnUnhovered = MoveTemp(InOnUnhovered);
 }
 
+void SDreamFlipCardBox::SetOnClicked(FSimpleDelegate InOnClicked)
+{
+	OnClicked = MoveTemp(InOnClicked);
+}
+
 void SDreamFlipCardBox::RequestRender()
 {
 	FrontFace.bRenderRequested = true;
@@ -302,6 +308,11 @@ void SDreamFlipCardBox::OnMouseEnter(const FGeometry& MyGeometry, const FPointer
 
 FReply SDreamFlipCardBox::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
+	if (MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+	{
+		OnClicked.ExecuteIfBound();
+	}
+
 	ClearFaceVirtualHover(GetHiddenFace(), MouseEvent);
 
 	FPointerEvent RoutedEvent;

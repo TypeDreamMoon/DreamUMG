@@ -158,6 +158,7 @@ TSharedRef<SWidget> UDreamFlipCardBox::RebuildWidget()
 	SAssignNew(MyFlipCardBox, SDreamFlipCardBox);
 	MyFlipCardBox->SetOnHovered(FSimpleDelegate::CreateUObject(this, &UDreamFlipCardBox::HandleSlateHovered));
 	MyFlipCardBox->SetOnUnhovered(FSimpleDelegate::CreateUObject(this, &UDreamFlipCardBox::HandleSlateUnhovered));
+	MyFlipCardBox->SetOnClicked(FSimpleDelegate::CreateUObject(this, &UDreamFlipCardBox::HandleSlateClicked));
 	PushAllPropertiesToSlate();
 	RefreshChildren();
 	return MyFlipCardBox.ToSharedRef();
@@ -188,6 +189,11 @@ void UDreamFlipCardBox::HandleSlateHovered()
 void UDreamFlipCardBox::HandleSlateUnhovered()
 {
 	OnCardUnhovered.Broadcast();
+}
+
+void UDreamFlipCardBox::HandleSlateClicked()
+{
+	OnCardClicked.Broadcast();
 }
 
 void UDreamFlipCardBox::PushAllPropertiesToSlate()

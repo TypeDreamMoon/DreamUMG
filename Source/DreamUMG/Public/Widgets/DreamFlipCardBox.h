@@ -51,6 +51,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Flip Card|Event")
 	FDreamFlipCardHoverEvent OnCardUnhovered;
 
+	UPROPERTY(BlueprintAssignable, Category = "Flip Card|Event")
+	FDreamFlipCardHoverEvent OnCardClicked;
+
 	UFUNCTION(BlueprintCallable, BlueprintSetter, Category = "Flip Card")
 	void SetFlipAngle(float InFlipAngle);
 
@@ -103,6 +106,7 @@ protected:
 private:
 	void HandleSlateHovered();
 	void HandleSlateUnhovered();
+	void HandleSlateClicked();
 	void PushAllPropertiesToSlate();
 	void RefreshChildren();
 

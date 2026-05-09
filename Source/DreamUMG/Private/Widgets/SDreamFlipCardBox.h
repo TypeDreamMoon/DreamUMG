@@ -46,6 +46,7 @@ public:
 	void SetMirrorBackFace(bool bInMirrorBackFace);
 	void SetOnHovered(FSimpleDelegate InOnHovered);
 	void SetOnUnhovered(FSimpleDelegate InOnUnhovered);
+	void SetOnClicked(FSimpleDelegate InOnClicked);
 	void RequestRender();
 
 protected:
@@ -106,6 +107,7 @@ private:
 
 	FSimpleDelegate OnHovered;
 	FSimpleDelegate OnUnhovered;
+	FSimpleDelegate OnClicked;
 	FFaceState FrontFace;
 	FFaceState BackFace;
 	TWeakPtr<SWidget> PressedVirtualButtonWidget;
